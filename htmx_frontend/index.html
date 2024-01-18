@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="https://unpkg.com/htmx.org@1.9.9"></script>
+
+		<script language="JavaScript" type="text/javascript">
+			window.addEventListener('load', function() {
+  				// page fully loaded
+				setDefaultDate();
+			});
+			
+			let startTime = Date.now();
+			let runClock = true;
+
+			function updateTime() {
+				if (runClock) {
+					//console.log("update time called" + Date.now());
+
+					let elapsed = Date.now() - startTime;
+					let seconds = Math.floor(elapsed / 1000);
+					document.getElementById("time").innerHTML =
+						"Execution Time: " + seconds + " seconds";
+				}
+			}
+
+			function disableClock() {
+				console.log("disable clock called");
+				//document.getElementById("time").innerHTML = ""
+				runClock = false;
+				const button = document.getElementById('myButton');
+				button.disabled = false;
+			}
+
+			function getFreeCourts() {
+				const dateField = document.getElementById("date");
+
+				if (dateField.value == "") {
+					alert("Please pick a date");
+				} else {
+
+					const button = document.getElementById('myButton');
+					button.disabled = true;
+
+					runClock = true;
+					startTime = Date.now();
+					let intervalID = setInterval(updateTime, 1000);
+					//console.log(intervalID);
+					const courtNumbers = ["1"];
+
+					courtNumbers.forEach((courtNumber) => {
+						const requestDiv = document.getElementById("court" + courtNumber);
+						requestDiv.innerHTML = ""; //clear any existing results
+
+						//live amazon ec2 container
+						let hx_get_value =
+							"http://ec2-3-12-196-194.us-east-2.compute.amazonaws.com/app/court/?date=" +
+							dateField.value;
+
+						//local server url for testing
+						// let hx_get_value =
+						// 	"http://localhost:8000/app/court/?date=" + dateField.value;
+
+						//local container url for testing
+						// let hx_get_value =
+						//  	"http://localhost/app/court/?date=" + dateField.value;
+
+						requestDiv.setAttribute("hx-get", hx_get_value);
+						htmx.process(requestDiv);
+						console.log(requestDiv.getAttribute("hx-get"));
+						htmx.trigger(requestDiv, "click");
+					});
+				}
+			}
+
+
+			function setDefaultDate(){
+				console.log("setDefaultDate called")
+				const today = new Date().toISOString().split('T')[0];
+				const dateInput = document.getElementById("date");
+				dateInput.min = today;
+			}
+		</script>
+	</head>
+
+	<body>
+		<h1>Welcome to the UBC Court Scraper</h1>
+		<h2>Because you don't care about court # you care that a court is FREE!</h2>
+		<h2>**BE PATIENT: Expect 90 seconds to find all free courts
+		<h2>Submit your request and page will refresh when done</h2>
+
+		<input
+			type="date"
+			id="date"
+			style="width: 50vw; height: 5vh; font-size: 3vw"
+		/>
+
+		<br />
+
+		<button
+			id="myButton"
+			hx-trigger="click"
+			hx-on="click: getFreeCourts()"
+			style="width: 50vw; height: 5vh; font-size: 3vw"
+		>
+			Check Free Courts
+		</button>
+
+		<hr />
+
+		<h3>
+			<div id="time" hx-trigger="click" hx-on="click: disableClock()"></div>
+			<br />
+		</h3>
+		<h3>
+			<div
+				id="court1"
+				hx-get=""
+				hx-trigger="click"
+				hx-on="click: console.log('Checking Court Availability')"
+				hx-swap="innerHTML"
+				hx-on::after-request="disableClock()"
+			>
+				<span class="htmx-indicator"
+					>Scraping free times for all 8 indoor courts...Can take approximately
+					1 minute, its better than digging through each court!?
+				</span>
+			</div>
+		</h3>
+
+		<hr />
+	</body>
+</html>
